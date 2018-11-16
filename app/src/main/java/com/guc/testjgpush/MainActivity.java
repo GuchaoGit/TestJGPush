@@ -1,18 +1,24 @@
 package com.guc.testjgpush;
 
+import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.guc.testjgpush.base.BaseActivity;
+
+import java.util.List;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends BaseActivity {
 
     public static final String MESSAGE_RECEIVED_ACTION = "com.guc.testjgpush.MESSAGE_RECEIVED_ACTION";
     public static final String KEY_TITLE = "title";
@@ -30,8 +36,23 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         ButterKnife.bind(this);
         registerMessageReceiver();
+        requestRuntimePermissions(new String[]{Manifest.permission.READ_CONTACTS, Manifest.permission.CALL_PHONE}, new PermissionListener() {
+            @Override
+            public void onGranted() {
+                Toast.makeText(MainActivity.this, "已获取通讯录权限", Toast.LENGTH_SHORT).show();
+            }
+
+            @Override
+            public void onDenied(List<String> deniedPermissions) {
+                Toast.makeText(MainActivity.this, "已拒绝获取通讯录权限", Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
+    @OnClick(R.id.btn_next)
+    public void onViewClicked() {
+        startActivity(new Intent(this, SecondActivity.class));
+    }
     @Override
     protected void onResume() {
         isForeground = true;

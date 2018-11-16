@@ -1,4 +1,4 @@
-package com.guc.testjgpush;
+package com.guc.testjgpush.base;
 
 import android.app.Application;
 
