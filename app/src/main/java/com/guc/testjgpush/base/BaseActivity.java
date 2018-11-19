@@ -21,6 +21,7 @@ import java.util.List;
  * 描述：
  */
 public class BaseActivity extends AppCompatActivity {
+
     public static final int REQUEST_CODE_SETTING = 2;
     private static final String DEF_RATIONAL_MESSAGE = "此功能需要您授权，否则将不能正常使用";
     private static final String DEF_RATIONAL_BTN_TEXT = "去设置";

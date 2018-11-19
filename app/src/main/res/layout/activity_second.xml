@@ -1,8 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="#ffffff"
+    android:orientation="vertical"
     tools:context=".SecondActivity">
 
-</android.support.constraint.ConstraintLayout>
+    <Button
+        android:id="@+id/btn_lambda"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="测试lambda表达式写的点击事件" />
+
+    <TextView
+        android:id="@+id/progress_percent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="50dp"
+        android:padding="3dp"
+        android:text="0%"
+        android:textColor="#ff00"
+        android:textSize="12sp" />
+
+    <ProgressBar
+        android:id="@+id/pb_progressbar"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/progressbar_color" />
+
+    <Button
+        android:id="@+id/btn_start"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="start" />
+
+</LinearLayout>
