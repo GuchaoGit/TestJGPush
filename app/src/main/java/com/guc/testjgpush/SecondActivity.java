@@ -37,6 +37,7 @@ public class SecondActivity extends AppCompatActivity {
     private int currentStatue;
     private float currentPosition;
     private int tvWidth;
+    private boolean isRunning;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,10 +62,17 @@ public class SecondActivity extends AppCompatActivity {
         });
     }
 
+    /**
+     * 基本语法:
+     * (parameters) -> expression
+     * 或
+     * (parameters) ->{ statements; }
+     */
     private void testLambda() {
         Log.d(TAG, "testLambda: Lambda表达式写的点击事件");
         mBtnLambda.setOnClickListener(event -> Toast.makeText(this, "Lambda表达式生效", Toast.LENGTH_LONG).show());
         mBtnStart.setOnClickListener(event -> {
+            if (isRunning) return;
             currentStatue = 0;
             currentPosition = 0;
             mPbProgressbar.setProgress(0);
@@ -74,36 +82,33 @@ public class SecondActivity extends AppCompatActivity {
 
     private void startProgress() {
         //开启分线程
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                //每一段要移动的距离
-                scrollDistance = (float) ((1.0 / mPbProgressbar.getMax()) * width);
-                for (int i = 1; i <= 100; i++) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            currentStatue++;
-                            mPbProgressbar.incrementProgressBy(1);
-                            mProgressPercent.setText(currentStatue + "%");
-                            // 得到字体的宽度
-                            tvWidth = mProgressPercent.getWidth();
-                            currentPosition += scrollDistance;
-                            //做一个平移动画的效果
-                            // 这里加入条件判断
-                            if (tvWidth + currentPosition <= width - mProgressPercent.getPaddingRight()) {
-                                mProgressPercent.setTranslationX(currentPosition);
-                            }
-                        }
-                    });
-                    try {
-                        Thread.sleep(80);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
+        new Thread(() -> {
+            isRunning = true;
+            //每一段要移动的距离
+            scrollDistance = (float) ((1.0 / mPbProgressbar.getMax()) * width);
+            for (int i = 1; i <= 100; i++) {
+                runOnUiThread(() -> {
+                    currentStatue++;
+                    mPbProgressbar.incrementProgressBy(1);
+                    mProgressPercent.setText(currentStatue + "%");
+                    // 得到字体的宽度
+                    tvWidth = mProgressPercent.getWidth();
+                    currentPosition += scrollDistance;
+                    //做一个平移动画的效果
+                    // 这里加入条件判断
+                    if (tvWidth + currentPosition <= width - mProgressPercent.getPaddingRight()) {
+                        mProgressPercent.setTranslationX(currentPosition);
                     }
+                });
+                try {
+                    Thread.sleep(80);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
                 }
             }
+            isRunning = false;
         }).start();
+
     }
 
     @Override
