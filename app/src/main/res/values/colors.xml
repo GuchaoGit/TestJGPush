@@ -3,5 +3,17 @@
     <color name="colorPrimary">#3F51B5</color>
     <color name="colorPrimaryDark">#303F9F</color>
     <color name="colorAccent">#FF4081</color>
+    <color name="colorWhite">#ffffff</color>
     <color name="transparent">#00000000</color>
+
+    <!--分数颜色-->
+    <color name="colorScoreRed">#e5352e</color>
+    <color name="colorScoreOrange">#f2b452</color>
+    <color name="colorScoreYellow">#f5e969</color>
+    <color name="colorScoreGreenLight">#bbd25e</color>
+    <color name="colorScoreGreen">#45b65a</color>
+    <color name="colorScoreBlueLight">#44b9d4</color>
+    <color name="colorScoreBlue">#148cea</color>
+    <color name="colorScoreBlueDark">#5069ff</color>
+    <color name="colorScorePinkDeep">#f3437a</color>
 </resources>
