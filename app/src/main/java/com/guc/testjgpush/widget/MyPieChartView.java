@@ -10,6 +10,7 @@ import android.graphics.PathMeasure;
 import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -17,7 +18,9 @@ import android.view.View;
 
 import com.guc.testjgpush.R;
 
+import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -32,8 +35,6 @@ public class MyPieChartView extends View {
     private Context mContext;
     private Paint mPaint;
     private List<PieData> mPieDatas;
-    //圆弧占比的集合
-    private List<Float> mRateList = new ArrayList<>();
 
     //圆弧半径
     private int mRadius;
@@ -52,6 +53,9 @@ public class MyPieChartView extends View {
 
     //是否展示文字
     private boolean isShowRateText = true;
+    private boolean isDrawCenterText = true;
+    private int mTextSize4Describe;
+    private float mSumScore;
 
     public MyPieChartView(Context context) {
         this(context, null);
@@ -77,20 +81,32 @@ public class MyPieChartView extends View {
         mPieDatas.add(new PieData(10, "隐患盘查", getResources().getColor(R.color.colorScoreGreen)));
     }
 
+    public void setDatas(List<PieData> datas) {
+        if (mPieDatas == null) {
+            mPieDatas = new ArrayList<>();
+        } else {
+            mPieDatas.clear();
+        }
+        mPieDatas.addAll(datas);
+        invalidate();
+    }
     private void initAttrs(AttributeSet attrs, int defStyleAttr) {
         TypedArray array = mContext.obtainStyledAttributes(attrs, R.styleable.MyPieChartView, defStyleAttr, 0);
         mBgColor = array.getColor(R.styleable.MyPieChartView_bgColor, Color.WHITE);
         mInnerCicleColor = array.getColor(R.styleable.MyPieChartView_innerCircleColor, Color.WHITE);
         mRadius = (int) array.getDimension(R.styleable.MyPieChartView_radius, dp2px(70));
         mRadiusInner = (int) array.getDimension(R.styleable.MyPieChartView_radius, dp2px(40));
-        mCenterPointRadius = (int) array.getDimension(R.styleable.MyPieChartView_radiusCenterPoint, dp2px(4));
+        mCenterPointRadius = (int) array.getDimension(R.styleable.MyPieChartView_radiusCenterPoint, dp2px(2));
+        mTextSize4Describe = (int) array.getDimension(R.styleable.MyPieChartView_textSize4Describe, 32);
         mLineWidth = (int) array.getDimension(R.styleable.MyPieChartView_lineWith, dp2px(2));
+        isDrawCenterText = array.getBoolean(R.styleable.MyPieChartView_isDrawCenterText, true);
         array.recycle();
     }
 
     private void initPaint() {
         mPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         mPaint.setAntiAlias(true);
+        mTextRect = new Rect();
     }
 
     @Override
@@ -132,50 +148,135 @@ public class MyPieChartView extends View {
             PieData data;
             //1.绘制圆饼
             RectF rectF = new RectF(mCenterX - mRadius, mCenterY - mRadius, mCenterX + mRadius, mCenterY + mRadius);
-            List<Point> mPointList = new ArrayList<>();
+            RectF rectF2 = new RectF(mCenterX - mRadius - dp2px(4), mCenterY - mRadius - dp2px(4), mCenterX + mRadius + dp2px(4), mCenterY + mRadius + dp2px(4));
             for (int i = 0; i < mPieDatas.size(); i++) {
                 data = mPieDatas.get(i);
                 mPaint.setColor(data.colorLine);
-                float sweepAngle = mRateList.get(i) * (360);
+                float sweepAngle = data.proportion * (360);
                 canvas.drawArc(rectF, mStartAngle, sweepAngle, true, mPaint);
-                dealPoint(rectF, mStartAngle, (mRateList.get(i) * 360) / 2, mPointList);
+                dealPoint(rectF2, mStartAngle, (data.proportion * 360) / 2, data);
                 mStartAngle += sweepAngle;
             }
             //(2)处理每块圆饼弧的中心点，绘制折线，显示对应的文字
             if (isShowRateText) {
-                drawableIndicateAndDescribe(canvas, mPieDatas, mPointList);
+                drawableIndicateAndDescribe(canvas, mPieDatas);
             }
             //(3)绘制内部中空的圆
             mPaint.setColor(mInnerCicleColor);
             mPaint.setStyle(Paint.Style.FILL);
             canvas.drawCircle(mCenterX, mCenterY, mRadiusInner, mPaint);
+            if (isDrawCenterText) {
+                mPaint.setColor(Color.BLACK);
+                mPaint.setTextSize(mTextSize4Describe);
+                String sum = String.format("%d", (int) mSumScore);
+                mPaint.getTextBounds(sum, 0, sum.length(), mTextRect);
+                canvas.drawText(sum, mCenterX - mTextRect.width() / 2, mCenterY + mTextRect.height() / 2, mPaint);
+            }
         } else {//暂无数据
-
+            mPaint.setColor(Color.BLACK);
+            mPaint.setTextSize(mTextSize4Describe);
+            String describe = "暂无数据";
+            mPaint.getTextBounds(describe, 0, describe.length(), mTextRect);
+            canvas.drawText(describe, mCenterX - mTextRect.width() / 2, mCenterY + mTextRect.height() / 2, mPaint);
         }
     }
 
     /**
      * 处理每块圆饼弧的中心点，绘制折线，显示对应的文字
      *
-     * @param canvas     画布
-     * @param mPieDatas  数据
-     * @param mPointList 点位
+     * @param canvas    画布
+     * @param mPieDatas 数据
      */
-    private void drawableIndicateAndDescribe(Canvas canvas, List<PieData> mPieDatas, List<Point> mPointList) {
+    private void drawableIndicateAndDescribe(Canvas canvas, List<PieData> mPieDatas) {
         int leftNum = 0;
         int rightNum = 0;
-        for (Point point : mPointList) {
-            if (point.x < mCenterX) {
+        List<PieData> leftPieDatas = new ArrayList<>();//左侧数据
+        List<PieData> rightPieDatas = new ArrayList<>();//右侧数据
+
+        for (PieData pieData : mPieDatas) {
+            if (pieData.centerPoint.x < mCenterX) {
                 leftNum++;
+                pieData.isRight = false;
+                leftPieDatas.add(pieData);
             } else {
                 rightNum++;
+                pieData.isRight = true;
+                rightPieDatas.add(pieData);
             }
         }
-        Log.e(TAG, "drawableIndicateAndDescribe: left" + leftNum + "right:" + rightNum);
+        Collections.sort(leftPieDatas);
+        Collections.sort(rightPieDatas);
+        Log.e(TAG, "drawableIndicateAndDescribe: left:" + leftNum + "\rright:" + rightNum);
+        int perRightHeight = 2 * (mRadius + 2 * mCenterPointRadius) / rightNum;//右侧间距
+        int perleftHeight = 2 * (mRadius + 2 * mCenterPointRadius) / leftNum; //左侧间距
+        Log.e(TAG, "drawableIndicateAndDescribe: perleftHeight:" + perleftHeight + "perRightHeight:" + perRightHeight);
+        PieData pieData;
+        Path path;
+        //画左侧指示点
+        for (int i = 0; i < leftPieDatas.size(); i++) {
+            pieData = leftPieDatas.get(i);
+            mPaint.setStrokeWidth(mLineWidth);
+            //画指示点
+            mPaint.setColor(pieData.colorLine);
+            mPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(pieData.centerPoint.x, pieData.centerPoint.y, mCenterPointRadius, mPaint);
+            //划线
+            mPaint.setStyle(Paint.Style.STROKE);
+            path = new Path();
+            path.moveTo(pieData.centerPoint.x, pieData.centerPoint.y);
+            path.lineTo((mCenterX - mRadius - dp2px(4) - dp2px(5)), perleftHeight * i + perleftHeight / 2);
+            path.lineTo(dp2px(10), perleftHeight * i + perleftHeight / 2);
+            canvas.drawPath(path, mPaint);
+
+            //写字
+            mPaint.setStyle(Paint.Style.FILL);
+            mPaint.setStrokeWidth(dp2px(0.75f));
+            mPaint.setColor(pieData.colorDescribe);
+            mPaint.setTextSize(mTextSize4Describe);
+
+            String deccribe = pieData.describe;
+            mPaint.getTextBounds(deccribe, 0, deccribe.length(), mTextRect);
+            canvas.drawText(deccribe, dp2px(10), perleftHeight * i + perleftHeight / 2 + mTextRect.height(), mPaint);
+
+            String score = String.format("%d(%.1f%%)", (int) pieData.score, pieData.proportion * 100);
+            mPaint.setColor(pieData.colorScore);
+            mPaint.getTextBounds(score, 0, score.length(), mTextRect);
+            canvas.drawText(score, dp2px(10), perleftHeight * i + perleftHeight / 2 - 3 * mLineWidth / 2, mPaint);
+        }
+        //画右侧指示点
+        for (int i = 0; i < rightPieDatas.size(); i++) {
+            pieData = rightPieDatas.get(i);
+            mPaint.setStrokeWidth(mLineWidth);
+            //画指示点
+            mPaint.setColor(pieData.colorLine);
+            mPaint.setStyle(Paint.Style.FILL);
+            canvas.drawCircle(pieData.centerPoint.x, pieData.centerPoint.y, mCenterPointRadius, mPaint);
+            //画线
+            mPaint.setStyle(Paint.Style.STROKE);
+            path = new Path();
+            path.moveTo(pieData.centerPoint.x, pieData.centerPoint.y);
+            path.lineTo((mCenterX + mRadius + dp2px(4)) + dp2px(5), perRightHeight * i + perRightHeight / 2);
+            path.lineTo(2 * mCenterX - dp2px(10), perRightHeight * i + perRightHeight / 2);
+            canvas.drawPath(path, mPaint);
+            //写字
+            mPaint.setStyle(Paint.Style.FILL);
+            mPaint.setStrokeWidth(dp2px(0.75f));
+            mPaint.setColor(pieData.colorDescribe);
+            mPaint.setTextSize(mTextSize4Describe);
+
+            String deccribe = pieData.describe;
+            mPaint.getTextBounds(deccribe, 0, deccribe.length(), mTextRect);
+            canvas.drawText(deccribe, 2 * mCenterX - dp2px(10) - mTextRect.width(), perRightHeight * i + perRightHeight / 2 + mTextRect.height(), mPaint);
+
+            String score = String.format("%d(%.1f%%)", (int) pieData.score, pieData.proportion * 100);
+            mPaint.setColor(pieData.colorScore);
+            mPaint.getTextBounds(score, 0, score.length(), mTextRect);
+            canvas.drawText(score, 2 * mCenterX - dp2px(10) - mTextRect.width(), perRightHeight * i + perRightHeight / 2 - 3 * mLineWidth / 2, mPaint);
+        }
     }
 
     //处理获取每段弧中点坐标
-    private void dealPoint(RectF rectF, float startAngle, float endAngle, List<Point> pointList) {
+    private void dealPoint(RectF rectF, float startAngle, float endAngle, PieData data) {
         Path path = new Path();
         //通过Path类画一个90度（180—270）的内切圆弧路径
         path.addArc(rectF, startAngle, endAngle);
@@ -189,7 +290,7 @@ public class MyPieChartView extends View {
         float x = coords[0];
         float y = coords[1];
         Point point = new Point(Math.round(x), Math.round(y));
-        pointList.add(point);
+        data.centerPoint = point;
     }
 
     /**
@@ -202,9 +303,9 @@ public class MyPieChartView extends View {
         for (int i = 0; i < mPieDatas.size(); i++) {
             sum += mPieDatas.get(i).score;
         }
-        mRateList.clear();
+        mSumScore = sum;
         for (int i = 0; i < mPieDatas.size(); i++) {
-            mRateList.add(mPieDatas.get(i).score / sum);
+            mPieDatas.get(i).proportion = mPieDatas.get(i).score / sum;
         }
     }
 
@@ -214,14 +315,25 @@ public class MyPieChartView extends View {
     }
 
     /**
+     * 获取格式化的保留两位数的数
+     */
+    private String getFormatPercentRate(float dataValue) {
+        DecimalFormat decimalFormat = new DecimalFormat(".00");//构造方法的字符格式这里如果小数不足2位,会以0补足.
+        return decimalFormat.format(dataValue);
+    }
+
+    /**
      * 饼状图数据
      */
-    public class PieData {
+    public class PieData implements Comparable<PieData> {
         public float score;
         public String describe;
         public int colorLine;
         public int colorDescribe;
         public int colorScore;
+        public float proportion;//占比
+        public Point centerPoint;//指示点位置
+        public boolean isRight = true;//右侧的点
 
         public PieData(float score, String describe, int colorLine) {
             this(score, describe, colorLine, Color.parseColor("#999999"), Color.parseColor("#333333"));
@@ -235,5 +347,9 @@ public class MyPieChartView extends View {
             this.colorScore = colorScore;
         }
 
+        @Override
+        public int compareTo(@NonNull PieData pieData) {
+            return this.centerPoint.y - pieData.centerPoint.y;
+        }
     }
 }

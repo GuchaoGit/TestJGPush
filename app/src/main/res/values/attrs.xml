@@ -16,5 +16,6 @@
         <attr name="textSize4Score" format="dimension" />
         <attr name="textColor4Describe" format="color" />
         <attr name="textColor4Score" format="color" />
+        <attr name="isDrawCenterText" format="boolean" />
     </declare-styleable>
 </resources>
