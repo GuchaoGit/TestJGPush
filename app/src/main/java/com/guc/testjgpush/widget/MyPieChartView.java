@@ -90,6 +90,7 @@ public class MyPieChartView extends View {
         mPieDatas.addAll(datas);
         invalidate();
     }
+
     private void initAttrs(AttributeSet attrs, int defStyleAttr) {
         TypedArray array = mContext.obtainStyledAttributes(attrs, R.styleable.MyPieChartView, defStyleAttr, 0);
         mBgColor = array.getColor(R.styleable.MyPieChartView_bgColor, Color.WHITE);
@@ -207,8 +208,8 @@ public class MyPieChartView extends View {
         Collections.sort(leftPieDatas);
         Collections.sort(rightPieDatas);
         Log.e(TAG, "drawableIndicateAndDescribe: left:" + leftNum + "\rright:" + rightNum);
-        int perRightHeight = 2 * (mRadius + 2 * mCenterPointRadius) / rightNum;//右侧间距
-        int perleftHeight = 2 * (mRadius + 2 * mCenterPointRadius) / leftNum; //左侧间距
+        int perRightHeight = rightNum != 0 ? 2 * (mRadius + 2 * mCenterPointRadius) / rightNum : 2 * (mRadius + 2 * mCenterPointRadius);//右侧间距
+        int perleftHeight = leftNum != 0 ? 2 * (mRadius + 2 * mCenterPointRadius) / leftNum : 2 * (mRadius + 2 * mCenterPointRadius); //左侧间距
         Log.e(TAG, "drawableIndicateAndDescribe: perleftHeight:" + perleftHeight + "perRightHeight:" + perRightHeight);
         PieData pieData;
         Path path;
