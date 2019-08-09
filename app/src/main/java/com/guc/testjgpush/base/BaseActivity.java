@@ -100,9 +100,9 @@ public class BaseActivity extends AppCompatActivity {
         }
         String[] permissions = mDeniedPermissions.toArray(new String[mDeniedPermissions.size()]);
         if (rationale) {
-            requestPermissions(permissions, REQUEST_CODE);
-        } else {
             showRationalDialog(permissions);
+        } else {
+            requestPermissions(permissions, REQUEST_CODE);
         }
     }
 
