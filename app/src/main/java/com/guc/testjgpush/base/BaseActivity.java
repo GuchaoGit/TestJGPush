@@ -96,7 +96,7 @@ public class BaseActivity extends AppCompatActivity {
             return;
         }
         for (String permission : mDeniedPermissions) {
-            rationale = rationale || shouldShowRequestPermissionRationale(permission);
+            rationale = rationale || shouldShowRequestPermissionRationale(permission);//拒绝过返回true,其他返回false
         }
         String[] permissions = mDeniedPermissions.toArray(new String[mDeniedPermissions.size()]);
         if (rationale) {
